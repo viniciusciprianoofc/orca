@@ -9,6 +9,7 @@ export const TUI_AGENT_AUTO_PICK_ORDER = [
   'openclaude',
   'codex',
   'grok',
+  'muse',
   'copilot',
   'opencode',
   'mimo-code',
@@ -39,8 +40,7 @@ export const TUI_AGENT_AUTO_PICK_ORDER = [
   'rovo',
   'hermes',
   'devin',
-  'openclaw',
-  'muse'
+  'openclaw'
 ] as const satisfies readonly TuiAgent[]
 
 // Why: fresh installs should expose Claude Agent Teams in agent pickers; the
