@@ -9,6 +9,7 @@ export const TUI_AGENT_AUTO_PICK_ORDER = [
   'openclaude',
   'codex',
   'grok',
+  'muse',
   'copilot',
   'opencode',
   'mimo-code',
