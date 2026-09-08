@@ -7,6 +7,8 @@
  * structure and command recognition without creating a duplicate subprocess runner.
  */
 
+const MUSE_HEADLESS_SUBCOMMAND = 'exec'
+
 const REDACTED_SECRET = '[SANITIZADO]'
 
 /**
@@ -38,16 +40,21 @@ export function buildMuseExecArgs(prompt: string, extraArgs?: readonly string[])
 export function isMuseHeadlessCommand(argsOrCommand: string | readonly string[]): boolean {
   if (typeof argsOrCommand !== 'string') {
     return (
-      argsOrCommand[0] === 'exec' ||
-      (argsOrCommand[0] === 'muse' && argsOrCommand[1] === 'exec')
+      argsOrCommand[0] === MUSE_HEADLESS_SUBCOMMAND ||
+      (argsOrCommand[0] === 'muse' && argsOrCommand[1] === MUSE_HEADLESS_SUBCOMMAND)
     )
   }
   const trimmed = argsOrCommand.trim()
   return (
     trimmed === 'muse exec' ||
     trimmed.startsWith('muse exec ') ||
-    trimmed === 'exec' ||
+    trimmed === MUSE_HEADLESS_SUBCOMMAND ||
     trimmed.startsWith('exec ')
   )
 }
 
+// Why: the shared one-shot table passes full argv with the binary (often an absolute
+// path) at index 0, so match the subcommand slot instead of the binary name.
+export function isMuseHeadlessOneShotCommand(tokens: readonly string[]): boolean {
+  return tokens[1] === MUSE_HEADLESS_SUBCOMMAND
+}

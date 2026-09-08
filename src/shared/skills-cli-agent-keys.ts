@@ -53,7 +53,6 @@ export const SKILLS_CLI_AGENT_KEY_BY_TUI_AGENT = {
   muse: null
 } satisfies Record<TuiAgent, string | null>
 
-
 /**
  * The shared `.agents/skills` target every universal agent reads. Always included
  * so agents Orca cannot map still receive the skill.

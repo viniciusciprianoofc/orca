@@ -28,7 +28,6 @@ const WELL_KNOWN_LABELS: Record<string, string> = {
   muse: 'Meta Muse'
 }
 
-
 export function formatAgentTypeLabel(agentType: AgentType | null | undefined): string {
   if (!agentType || agentType === 'unknown') {
     return 'Agent'

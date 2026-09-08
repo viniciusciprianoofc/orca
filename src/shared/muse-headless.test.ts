@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   buildMuseExecArgs,
   isMuseHeadlessCommand,
+  isMuseHeadlessOneShotCommand,
   sanitizeLogOutput
 } from './muse-headless'
+import { isHeadlessOneShotAgentCommand } from './agent-headless-command'
+import { recognizeAgentProcessFromCommandLine } from './agent-process-recognition'
 import { isTuiAgent, TUI_AGENT_CONFIG } from './tui-agent-config'
 import { TUI_AGENT_DISPLAY_NAMES } from './tui-agent-display-names'
 import { buildAgentStartupPlan } from './tui-agent-startup'
@@ -46,6 +49,26 @@ describe('muse agent registration and separation of modes', () => {
     expect(isMuseHeadlessCommand(['muse', 'exec', 'prompt'])).toBe(true)
     expect(isMuseHeadlessCommand(['exec', 'prompt'])).toBe(true)
   })
+
+  it('matches the shared one-shot table contract, where argv[0] is the binary path', () => {
+    expect(isMuseHeadlessOneShotCommand(['muse', 'exec', 'prompt'])).toBe(true)
+    expect(isMuseHeadlessOneShotCommand(['/usr/local/bin/muse', 'exec', 'prompt'])).toBe(true)
+    expect(isMuseHeadlessOneShotCommand(['muse', '--', 'exec'])).toBe(false)
+    expect(isMuseHeadlessOneShotCommand(['muse'])).toBe(false)
+
+    expect(isHeadlessOneShotAgentCommand('muse', ['muse', 'exec', 'prompt'])).toBe(true)
+    expect(isHeadlessOneShotAgentCommand('muse', ['muse', '--', 'prompt'])).toBe(false)
+  })
+
+  it('keeps interactive muse panes recognized while filtering headless one-shots', () => {
+    expect(recognizeAgentProcessFromCommandLine('muse -- "Fix the bug"')?.agent).toBe('muse')
+    expect(recognizeAgentProcessFromCommandLine('muse exec "Fix the bug"')).toBeNull()
+    expect(
+      recognizeAgentProcessFromCommandLine('muse exec "Fix the bug"', {
+        includeHeadlessOneShot: true
+      })?.agent
+    ).toBe('muse')
+  })
 })
 
 describe('muse headless argument builder and security', () => {
@@ -61,7 +84,8 @@ describe('muse headless argument builder and security', () => {
   })
 
   it('sanitizes credentials and tokens from logs and stderr', () => {
-    const rawError = 'Error: authentication failed for meta_api_key="EAABxyz1234567890abcdef" token=secret_token_1234567'
+    const rawError =
+      'Error: authentication failed for meta_api_key="EAABxyz1234567890abcdef" token=secret_token_1234567'
     const sanitized = sanitizeLogOutput(rawError)
     expect(sanitized).not.toContain('EAABxyz1234567890abcdef')
     expect(sanitized).not.toContain('secret_token_1234567')

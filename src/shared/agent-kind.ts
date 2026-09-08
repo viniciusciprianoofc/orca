@@ -53,7 +53,6 @@ const TUI_AGENT_KIND_BY_AGENT = {
   muse: 'muse'
 } satisfies Record<TuiAgent, ConcreteAgentKind>
 
-
 // Why: `satisfies Record<TuiAgent, …>` makes the lookup exhaustive at compile
 // time, but stale persisted settings or unsafe IPC casts can carry a string
 // outside the union at runtime — fall back to `'other'` so the event still
