@@ -3,6 +3,7 @@
   "defaultOpen": true,
   "pages": [
     "supported",
+    "muse-byo",
     "claude-code",
     "glm-agent",
     "codex",

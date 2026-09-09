@@ -1,0 +1,149 @@
+---
+title: Muse BYO on Orca
+description: Use the Muse CLI through PATH from an Orca terminal, with clear limits around picker integration and orchestration.
+---
+
+Status: operational protocol awaiting human merge review. This is not a product-integration proposal.
+
+## Scope
+
+Muse can be used as a bring-your-own (BYO) terminal CLI. The PATH route is:
+
+```text
+operator terminal -> PATH lookup -> muse -> operator returns the result
+```
+
+This page does not add or change Muse product integration, picker behavior, Chat UI, status hooks, usage tracking, account switching, updater, CI, AI-OPS, Mission Control, collectors, or release behavior. It does not install Orca or Muse, change update settings, rebuild Muse UI, merge, or push.
+
+## Facts and hypotheses
+
+### Facts to revalidate on the target host
+
+- `where.exe muse` (or the host-equivalent command) must resolve an executable.
+- `muse --version` must return a non-empty version line.
+- `muse --help` documents an interactive TUI when no subcommand is supplied and documents `muse exec` as a non-interactive mode.
+- The built-in supported-agent page remains the source of truth for official picker support; this BYO page does not add Muse to that contract.
+- A source tree may also contain first-class Muse integration, including catalog, startup, status, or headless paths. That is branch- and release-specific evidence, not a promise for every Orca version.
+
+### Operational interpretation
+
+The contract documented here is BYO PATH use. The operator owns the Muse installation, authentication, host, working directory, and safety settings. An orchestrator may use this protocol without relying on a picker entry, but it must not describe the BYO route as official release integration merely because `muse` is executable.
+
+The current source checkout has a Muse catalog entry and first-class integration paths. Do not describe those implementation details as universal release behavior; verify the target release's supported-agent documentation and branch before promising picker, status, Chat UI, usage, or resume capabilities. This page documents only the BYO path and does not test or modify the first-class integration.
+
+## Operator procedure: terminal -> Muse
+
+Run this from the intended workspace or repository directory:
+
+```powershell
+where.exe muse
+Get-Command muse
+muse --version
+muse
+```
+
+Then type or paste the task into the Muse session. Prefer the interactive TUI for ordinary work because it makes the active session and prompts visible. Before submitting a request, confirm the working directory and avoid pasting credentials, access tokens, private keys, or other secrets.
+
+For a documented headless check, `muse exec` accepts a prompt and can emit JSONL. Use it only for a narrowly bounded prompt and disable tools when no repository action is needed, for example:
+
+```powershell
+muse exec --disable-shell --disable-web-tools --approval-mode never --approval-judge off --max-model-steps 1 --json "Reply with exactly MUSE_BYO_OK and nothing else. Do not use tools."
+```
+
+`--approval-mode never` is appropriate here only because this is a one-step, no-tools handshake. Use the normal approval mode for real work. The `--no-session-log` option must not be treated as a blanket privacy guarantee: this run emitted `local session messaging disabled: session logging is required`. Do not place secrets in a handshake or task prompt.
+
+Muse may load workspace trust and applicable workspace rules. In this run it reported workspace trust from user configuration; confirm the trust boundary before a real task and do not assume that tool restrictions remove all workspace context.
+
+## Orchestrator procedure: prepare text -> operator -> Muse -> result
+
+The orchestrator does not need an Orca picker entry for this BYO path and does not impersonate the operator's Muse session. It prepares a bounded text request, gives it to the operator, and consumes the operator-returned result.
+
+Recommended envelope for a short request:
+
+```text
+BEGIN MUSE REQUEST
+TASK: <one-sentence objective>
+CONTEXT: <facts the operator has approved for sharing>
+CONSTRAINTS:
+- <file/scope boundary>
+- no secrets
+- no merge or push
+EXPECTED OUTPUT: <format and acceptance checks>
+REPLY MARKER: <optional exact marker>
+END MUSE REQUEST
+```
+
+The operator pastes the envelope into Muse and returns the result to the orchestrator, preserving the exact response where practical and adding only safe metadata: execution host, workspace directory, Muse version, timestamp, and live/unverifiable/exited or process-exit outcome. The orchestrator must distinguish “no response yet” from “process exited”. For SSH, the execution host owns the process; loss of contact is `unverifiable`, not proof of death. Use only the verdict vocabulary `live`, `unverifiable`, and `exited`.
+
+## Handshake and long prompts
+
+Use a low-cost handshake before a real task:
+
+```text
+Reply with exactly MUSE_BYO_OK and nothing else. Do not use tools.
+```
+
+For long prompts:
+
+1. Keep the envelope sections explicit and put the acceptance criteria near the end.
+2. Mark the prompt boundaries with `BEGIN MUSE REQUEST` and `END MUSE REQUEST`.
+3. State whether Muse may inspect files, execute commands, or only answer from the supplied context.
+4. Request a compact result with a stable marker, summary, tests, and blockers.
+5. Send secrets through neither the envelope nor the returned report.
+6. If the prompt is truncated, ambiguous, or changes scope, stop and have the operator resend a corrected request rather than guessing.
+
+## What not to do
+
+- Do not describe the BYO PATH route as an official supported-agent entry without checking the target release's supported-agent documentation.
+- Do not instruct an operator to find Muse in the official picker when the task is BYO PATH.
+- Do not add picker/UI/rebuild/CI/update/AI-OPS/Mission Control behavior as part of this protocol.
+- Do not use `--yolo`, disable sandboxing, or grant broad tool access for a handshake or an unreviewed prompt.
+- Do not paste API keys, tokens, cookies, private keys, or customer data into Muse or an orchestrator message.
+- Do not treat the Grok Bot draft as evidence. Re-run PATH, version, and communication checks on the host being reported.
+- Do not assume a local PATH result applies to an SSH host, WSL distro, or another execution host; validate on that host.
+- Do not merge or push from this protocol. The repository, target branch, and merge authority remain human decisions.
+
+## BYO_COMM_OK criteria
+
+Mark `BYO_COMM_OK` only when all applicable checks pass:
+
+1. `where.exe muse` or the host-equivalent command resolves an executable.
+2. `muse --version` returns a non-empty version line.
+3. A bounded interactive or documented headless session accepts the handshake.
+4. The safe marker `MUSE_BYO_OK` is returned exactly, with a successful session/exit outcome.
+5. The reported workspace and execution host are the intended locations.
+6. No secret was included in the prompt or evidence.
+
+If PATH/version passes but the session cannot be opened, report `COMM_TEST=PARTIAL` or `FAIL`; do not upgrade it to green from installation evidence alone.
+
+## Validation record
+
+Keep host-specific evidence in the operator's internal report, not in this public page. The report should record the resolved executable, version, handshake marker, exit/session outcome, intended host/workspace, and whether secrets were excluded. Omit user paths, account names, branch names, commit SHAs, runtime identifiers, provider telemetry, and raw JSONL unless a maintainer explicitly needs them.
+
+For a passing communication check, the internal report should contain the safe marker `MUSE_BYO_OK`, a successful exit/session outcome, and `BYO_COMM_OK=PASS`. A PATH/version check without a successful handshake is `PARTIAL` or `FAIL`.
+
+## Merge destination and gate
+
+### Recommendation
+
+Merge this page into the tracked ORCA docs site at:
+
+```text
+docs/site/content/docs/agents/muse-byo.mdx
+```
+
+The page is deliberately adjacent to, but separate from, `docs/site/content/docs/agents/supported.mdx`; the latter remains the source for official picker support. This candidate adds the page to the agents navigation after `supported`; the human merge authority must approve that public placement or remove the nav entry before merge.
+
+### Alternatives
+
+1. Use `docs/reference/muse-byo-orca.md` only if maintainers explicitly add it to the repository's reference-doc allowlist; otherwise `.gitignore` treats most of `docs/reference/` as local-only.
+2. Place it under a repository-approved `docs/architecture/` area if the destination is intended to be architecture-only.
+
+Do not move or duplicate it into `emporio-leste` without a separately approved cross-repository need.
+
+### Pending human confirmations
+
+- Confirm the target repository and target branch before merge.
+- Confirm whether the public nav entry is wanted for the target release.
+- Confirm the intended product contract: BYO PATH only, or a separately reviewed first-class Muse integration.
+- Confirm who may merge. This page never authorizes merge or push.
