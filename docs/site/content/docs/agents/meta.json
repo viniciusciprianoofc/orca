@@ -4,6 +4,7 @@
   "pages": [
     "supported",
     "muse-byo",
+    "architecture-habits",
     "claude-code",
     "glm-agent",
     "codex",
