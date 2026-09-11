@@ -73,6 +73,13 @@ describe('agent-context over the live registry', () => {
     expect(rm?.aliases).toContainEqual(['worktree', 'remove'])
   })
 
+  it('advertises the read-only agent pool command without a refresh flag', () => {
+    const schema = buildAgentContext(COMMAND_SPECS)
+    const pool = schema.commands.find((command) => command.command === 'agent pool')
+    expect(pool?.flags).toContain('json')
+    expect(pool?.flags).not.toContain('refresh')
+  })
+
   it('human summary count matches the command count', () => {
     const schema = buildAgentContext(COMMAND_SPECS)
     expect(formatAgentContextSummary(schema)).toContain(`${schema.commandCount} commands`)

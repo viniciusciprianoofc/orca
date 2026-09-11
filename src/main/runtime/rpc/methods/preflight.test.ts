@@ -1,16 +1,18 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RpcDispatcher } from '../dispatcher'
 import type { RpcRequest } from '../core'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { PREFLIGHT_METHODS } from './preflight'
 
 const {
+  createAgentPoolSnapshotMock,
   detectInstalledAgentsWithShellPathHydrationMock,
   detectRemoteAgentsMock,
   detectRemoteWindowsTerminalCapabilitiesMock,
   refreshShellPathAndDetectAgentsMock,
   runPreflightCheckMock
 } = vi.hoisted(() => ({
+  createAgentPoolSnapshotMock: vi.fn(),
   detectInstalledAgentsWithShellPathHydrationMock: vi.fn(),
   detectRemoteAgentsMock: vi.fn(),
   detectRemoteWindowsTerminalCapabilitiesMock: vi.fn(),
@@ -26,11 +28,19 @@ vi.mock('../../../preflight/agent-detection', () => ({
   runPreflightCheck: runPreflightCheckMock
 }))
 
+vi.mock('../../../../shared/agent-pool-snapshot', () => ({
+  createAgentPoolSnapshot: createAgentPoolSnapshotMock
+}))
+
 function makeRequest(method: string, params?: unknown): RpcRequest {
   return { id: 'req-1', authToken: 'tok', method, params }
 }
 
 describe('preflight RPC methods', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('runs the server-side preflight check through runtime RPC', async () => {
     const status = {
       git: { installed: true },
@@ -70,6 +80,20 @@ describe('preflight RPC methods', () => {
       ok: true,
       result: { agents: ['codex', 'claude'], shellHydrationOk: true }
     })
+  })
+
+  it('builds an agent pool from host detection without refreshing agents', async () => {
+    detectInstalledAgentsWithShellPathHydrationMock.mockResolvedValueOnce(['codex'])
+    createAgentPoolSnapshotMock.mockReturnValueOnce({ observedAt: 123, agents: [] })
+    const runtime = { getRuntimeId: () => 'test-runtime' } as unknown as OrcaRuntimeService
+    const dispatcher = new RpcDispatcher({ runtime, methods: PREFLIGHT_METHODS })
+
+    const response = await dispatcher.dispatch(makeRequest('preflight.getAgentPool'))
+
+    expect(detectInstalledAgentsWithShellPathHydrationMock).toHaveBeenCalledTimes(1)
+    expect(createAgentPoolSnapshotMock).toHaveBeenCalledWith(['codex'])
+    expect(refreshShellPathAndDetectAgentsMock).not.toHaveBeenCalled()
+    expect(response).toMatchObject({ ok: true, result: { observedAt: 123, agents: [] } })
   })
 
   it('detects agents on remote SSH connections through runtime RPC', async () => {

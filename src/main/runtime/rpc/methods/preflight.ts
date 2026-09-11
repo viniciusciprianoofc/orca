@@ -7,6 +7,7 @@ import {
   refreshShellPathAndDetectAgents,
   runPreflightCheck
 } from '../../../preflight/agent-detection'
+import { createAgentPoolSnapshot } from '../../../../shared/agent-pool-snapshot'
 
 const PreflightCheck = z.object({
   force: z.boolean().optional()
@@ -28,6 +29,12 @@ export const PREFLIGHT_METHODS: RpcMethod[] = [
     name: 'preflight.detectAgents',
     params: null,
     handler: async () => detectInstalledAgentsWithShellPathHydration()
+  }),
+  defineMethod({
+    name: 'preflight.getAgentPool',
+    params: null,
+    handler: async () =>
+      createAgentPoolSnapshot(await detectInstalledAgentsWithShellPathHydration())
   }),
   defineMethod({
     name: 'preflight.detectRemoteAgents',
