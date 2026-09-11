@@ -173,6 +173,28 @@ describe('command aliases dispatch to the canonical handler', () => {
       vi.unstubAllEnvs()
     }
   })
+
+  it('routes `agent pool` to the selected runtime instead of pinning it locally', async () => {
+    vi.stubEnv('ORCA_ENVIRONMENT', 'remote-pool')
+    queueFixtures(
+      callMock,
+      okFixture('status', {
+        runtimeId: 'remote-runtime',
+        capabilities: ['preflight.agent-pool.v1']
+      }),
+      okFixture('pool', { observedAt: 1, agents: [] }),
+      okFixture('accounts', { rateLimits: {} })
+    )
+    try {
+      await main(['agent', 'pool', '--json'], '/tmp/repo')
+
+      // Undefined preserves the ambient selector; local-only groups receive null instead.
+      expect(runtimeClientConstructorMock).toHaveBeenCalledWith(undefined, undefined)
+      expect(callMock).toHaveBeenCalledWith('preflight.getAgentPool')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
 })
 
 describe('artifact runtime routing', () => {

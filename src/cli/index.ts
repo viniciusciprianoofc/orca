@@ -36,7 +36,8 @@ function shouldIgnoreRemoteSelection(commandPath: string[]): boolean {
     // so routing the other half produced one listing describing two machines at once.
     commandPath[0] === 'host' ||
     commandPath[0] === 'serve' ||
-    commandPath[0] === 'agent' ||
+    // Why: agent pool inventories the selected execution host, so it must not silently pin local.
+    (commandPath[0] === 'agent' && commandPath[1] !== 'pool') ||
     commandPath[0] === 'vm' ||
     commandPath[0] === 'agent-context'
   )
