@@ -1,0 +1,96 @@
+---
+title: Architecture habits
+description: Three architecture habits for Orca orchestrators and workers — evidence before concluding, discovery-first, and durable state outside chat.
+---
+
+import { Callout } from '@/components/docs/prose'
+
+Status: operator protocol for orchestrators and workers. This is not a product feature. It does not change Orca UI, Muse picker integration, or the control plane.
+
+The operator's private orchestration policy is the full source of coordination rules. Do not copy or vendor it into this repository. This page is the short architecture extract orchestrators and workers should apply on every mission.
+
+Muse UI remains out of scope. For PATH-only Muse use, see [Muse BYO on Orca](/docs/agents/muse-byo).
+
+## The three habits
+
+### 1. Evidence before concluding
+
+Do not mark success from a plan, a prompt, or a chat claim. Require an artifact: command output, test result, file path, commit SHA, PR state, or a process verdict.
+
+<Callout title="ACTION is not SUCCESS">
+  Running a command, sending a prompt, creating a branch, or opening a PR is
+  **action**. **Success** is the verified outcome of that action. Close a mission
+  only on evidence, never on intent.
+</Callout>
+
+For anything that reports, stops, or lists remote work, the execution host owns the verdict. Use only `live` / `unverifiable` / `exited`. Loss of contact is never proof of death. Folder workspaces are first-class; do not assume every workspace is a git worktree.
+
+### 2. Discovery-first
+
+Search before you write. Reuse or extend an existing implementation instead of building a parallel one. Confirm the branch, the base ref, and the contracts that apply (SSH, folder workspaces, remote wire, Git version, Windows/WSL).
+
+Separate **facts** (revalidated on this host/checkout) from **hypotheses**. Do not promote a previous chat, a draft, or another machine's PATH result into a fact.
+
+### 3. State in Git/ficha, not only chat
+
+Chat is ephemeral. Durable state lives in:
+
+- the **ficha** (mission card): objective, constraints, human gates, status
+- **Git** when the workspace is a git worktree: branch, local commit, later PR
+- the **worktree comment** / card status for the live snapshot
+- a **canonical doc** when the decision is protocol
+
+A chat summary is not the system of record.
+
+## When to discover before coding
+
+Do discovery first when any of these are true:
+
+- The mission does not name the exact files, or the behavior may already exist.
+- The change is cross-cutting (SSH, WSL, Windows, folder vs git workspace, remote wire, Git capability).
+- Success criteria are ambiguous, or the work looks like a new control plane.
+- You would otherwise guess an API, flag, or merge path.
+
+You may keep discovery short when the mission already names the files, the change is local, and the current worktree already holds the evidence. Discovery-first is not a license to scan the entire history or every ref; keep Git and source searches bounded.
+
+## Where to record state
+
+| Artifact | What belongs there |
+| --- | --- |
+| Ficha | Objective, constraints, human gates, `PASS` / `FAIL` / `SKIP+reason` |
+| Git branch + local commit | Code and docs that must survive the chat |
+| PR (only when the mission authorizes it) | Reviewable proposal. Do not merge with `gh pr merge`. Merges go through Orca with CI, after a human gate. |
+| Worktree comment | One-line live snapshot (`orca worktree set --worktree active --comment "..."`) |
+| Canonical doc | Durable protocol, like this page or [Muse BYO](/docs/agents/muse-byo) |
+
+For folder workspaces, use the ficha and tracked files in that folder. Git commit/PR apply only when the workspace is actually a git worktree.
+
+## Mission close checklist
+
+A worker or orchestrator may report **done** only when every box is evidenced:
+
+1. Each exit criterion has an artifact (path, SHA, test output, or explicit `SKIP` + reason).
+2. ACTION ≠ SUCCESS: no “I ran X” without the result of X.
+3. State is written to ficha / Git / doc — not only to chat.
+4. Human gates were respected (no unauthorized push, PR, or merge).
+5. Independent reviewer ran when the mission asks for one; record `AUDITOR=PASS` or `FAIL` with findings, otherwise `SKIP` + reason.
+6. Tests are `PASS` or `SKIP` with a concrete reason (missing harness, out of scope, not cheap).
+7. SSH and folder-workspace cases were considered if the change touches execution or workspace identity.
+
+## What not to do
+
+- Do not build or extend **AI-OPS**, **Mission Control**, or Empório Leste from an Orca architecture mission.
+- Do not reinvent the control plane. Orchestration, worktrees, terminals, and decision gates already exist; use them.
+- Do not install skills unless the mission asks.
+- Do not copy or vendor the operator's private orchestration policy into this repository.
+- Do not treat Muse BYO as official picker/UI integration. Do not rebuild Muse UI.
+- Do not push, open a PR, or merge unless the current mission's human gate says so.
+- Do not use `gh pr merge` as a shortcut around Orca + CI.
+
+This page never authorizes push, PR, or merge.
+
+## Related
+
+- [Muse BYO on Orca](/docs/agents/muse-byo)
+- [Orchestration CLI](/docs/cli/orchestration)
+- [Worktree checkpoints](/docs/cli/worktree-checkpoints)
